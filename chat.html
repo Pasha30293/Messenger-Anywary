@@ -3,106 +3,141 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Рабочий Мессенджер</title>
+    <title>Мой Полный Мессенджер</title>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
-        body { font-family: sans-serif; background-color: #0f172a; color: white; height: 100vh; display: flex; justify-content: center; align-items: center; }
-        .window { width: 100%; max-width: 400px; height: 100vh; background: #1e293b; display: flex; flex-direction: column; position: relative; }
+        body { font-family: -apple-system, BlinkMacSystemFont, sans-serif; background-color: #0f172a; color: white; height: 100vh; display: flex; justify-content: center; align-items: center; }
+        .window { width: 100%; max-width: 450px; height: 100vh; background: #1e293b; display: flex; flex-direction: column; position: relative; overflow: hidden; }
         
-        /* Экран входа */
-        .login { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: #0f172a; display: flex; flex-direction: column; justify-content: center; padding: 30px; z-index: 10; }
-        .hidden { display: none !important; }
-        h2 { text-align: center; margin-bottom: 20px; color: #38bdf8; }
-        input { background: #1e293b; border: 2px solid #334155; border-radius: 10px; padding: 12px; color: white; font-size: 16px; width: 100%; outline: none; margin-bottom: 15px; }
-        button { background: #38bdf8; color: #0f172a; border: none; padding: 12px; border-radius: 10px; font-size: 16px; font-weight: bold; cursor: pointer; }
+        /* ЭКРАН ВХОДА */
+        .login-screen { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: #0f172a; display: flex; flex-direction: column; justify-content: center; padding: 40px; z-index: 100; transition: all 0.3s ease; }
+        .login-screen.hidden { display: none !important; }
+        h2 { text-align: center; margin-bottom: 25px; color: #38bdf8; font-size: 26px; }
+        input { background: #1e293b; border: 2px solid #334155; border-radius: 12px; padding: 15px; color: white; font-size: 16px; width: 100%; outline: none; margin-bottom: 20px; }
+        input:focus { border-color: #38bdf8; }
+        .main-btn { background: #38bdf8; color: #0f172a; border: none; padding: 15px; border-radius: 12px; font-size: 16px; font-weight: bold; cursor: pointer; transition: background 0.2s; }
+        .main-btn:hover { background: #7dd3fc; }
         
-        /* Экран чата */
-        .messages { flex: 1; padding: 15px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; background: #0f172a; }
-        .msg { max-width: 80%; padding: 10px; border-radius: 12px; font-size: 15px; word-break: break-word; }
-        .msg.my { background: #38bdf8; color: #0f172a; align-self: flex-end; }
-        .msg.other { background: #334155; color: white; align-self: flex-start; }
-        .author { font-size: 11px; opacity: 0.7; margin-bottom: 2px; font-weight: bold; }
-        .input-bar { background: #1e293b; padding: 10px; display: flex; gap: 10px; }
+        /* ЭКРАН ЧАТА */
+        .chat-header { background: #1e293b; padding: 15px 20px; border-bottom: 1px solid #334155; font-weight: bold; font-size: 18px; color: #38bdf8; display: flex; justify-content: space-between; align-items: center; }
+        .chat-header span { font-size: 14px; color: #94a3b8; }
+        .messages { flex: 1; padding: 20px; overflow-y: auto; display: flex; flex-direction: column; gap: 12px; background: #0f172a; }
+        
+        /* Сообщения */
+        .msg { max-width: 80%; padding: 12px 16px; border-radius: 18px; font-size: 15px; word-break: break-word; line-height: 1.4; animation: fadeIn 0.2s ease; }
+        .msg.my { background: #38bdf8; color: #0f172a; align-self: flex-end; border-bottom-right-radius: 4px; }
+        .msg.other { background: #334155; color: white; align-self: flex-start; border-bottom-left-radius: 4px; }
+        .author { font-size: 11px; opacity: 0.7; margin-bottom: 4px; font-weight: bold; display: block; }
+        
+        /* Панель ввода */
+        .input-bar { background: #1e293b; padding: 15px; display: flex; gap: 10px; border-top: 1px solid #334155; }
+        .input-bar input { margin-bottom: 0; flex: 1; padding: 12px; border-radius: 10px; }
+
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
     </style>
+
+    <!-- Подключаем проверенные стабильные библиотеки Google Firebase напрямую -->
+    <script src="https://gstatic.com"></script>
+    <script src="https://gstatic.com"></script>
 </head>
 <body>
 
     <div class="window">
-        <!-- ЭКРАН ВХОДА -->
-        <div class="login" id="loginScreen">
+        <!-- 1. ЭКРАН ВХОДА (РЕГИСТРАЦИЯ) -->
+        <div class="login-screen" id="loginScreen">
             <h2>Вход в Мессенджер</h2>
-            <!-- Исправлен ID на nickInput -->
-            <input type="text" id="nickInput" placeholder="Твой никнейм..." maxlength="12">
-            <button onclick="login()">Войти в чат</button>
+            <input type="text" id="userInput" placeholder="Придумай никнейм..." maxlength="12" autocomplete="off">
+            <button class="main-btn" onclick="startChatSession()">Войти в чат</button>
         </div>
 
-        <!-- ЭКРАН ЧАТА -->
-        <div class="messages" id="box"></div>
-        <div class="input-bar">
-            <input type="text" id="txt" placeholder="Сообщение..." style="margin:0;">
-            <button onclick="send()">ОТПР</button>
+        <!-- 2. ЭКРАН ЧАТА -->
+        <div class="chat-header">
+            <div>💬 Глобальный чат</div>
+            <span id="profileLabel">Вы: Гость</span>
         </div>
+        
+        <div class="messages" id="chatBox"></div>
+        
+        <form class="input-bar" onsubmit="sendChatMessage(event)">
+            <input type="text" id="messageField" placeholder="Напишите сообщение..." autocomplete="off" required>
+            <button type="submit" class="main-btn" style="padding: 0 20px;">ОТПР</button>
+        </form>
     </div>
 
-    <!-- Быстрая база Firebase от Google -->
-    <script src="https://gstatic.com"></script>
-    <script src="https://gstatic.com"></script>
-
     <script>
+        // Инициализация базы данных Google Firebase (свободный тестовый сервер)
         const firebaseConfig = {
             databaseURL: "https://firebasedatabase.app"
         };
         firebase.initializeApp(firebaseConfig);
-        const db = firebase.database().ref("global_messages");
+        const databaseReference = firebase.database().ref("global_chat_nodes");
 
-        let myName = "";
-        const box = document.getElementById('box');
+        let globalNickname = "";
+        const chatBox = document.getElementById('chatBox');
+        const loginScreen = document.getElementById('loginScreen');
 
-        // Логика кнопки входа
-        function login() {
-            const nameInput = document.getElementById('nickInput');
-            const name = nameInput.value.trim();
-            if(!name) {
-                alert("Пожалуйста, введи имя!");
+        // ГЛАВНАЯ ФУНКЦИЯ ДЛЯ КНОПКИ ВХОДА
+        function startChatSession() {
+            const enteredName = document.getElementById('userInput').value.trim();
+            if (enteredName === "") {
+                alert("Пожалуйста, введи свой никнейм перед входом!");
                 return;
             }
-            myName = name;
-            document.getElementById('loginScreen').classList.add('hidden');
+            
+            globalNickname = enteredName;
+            document.getElementById('profileLabel').textContent = "Вы: " + globalNickname;
+            
+            // Плавное скрытие экрана регистрации
+            loginScreen.classList.add('hidden');
         }
 
-        // Отправка сообщений
-        function send() {
-            const txtInput = document.getElementById('txt');
-            const text = txtInput.value.trim();
-            if(!text) return;
+        // ФУНКЦИЯ ОТПРАВКИ СООБЩЕНИЯ В СЕТЬ
+        function sendChatMessage(event) {
+            event.preventDefault(); // Защита от перезагрузки страницы
+            const inputField = document.getElementById('messageField');
+            const currentText = inputField.value.trim();
             
-            db.push({
-                name: myName,
-                text: text,
-                time: Date.now()
+            if (!currentText || !globalNickname) return;
+            
+            // Запись структуры в базу Firebase
+            databaseReference.push({
+                user: globalNickname,
+                text: currentText,
+                timestamp: Date.now()
             });
             
-            txtInput.value = "";
+            inputField.value = ""; // Очистка строки ввода
         }
 
-        // Мгновенное отображение сообщений на экране
-        db.limitToLast(50).on('child_added', (snapshot) => {
-            const data = snapshot.val();
-            const isMy = data.name === myName;
+        // ПРИЕМ И ОТОБРАЖЕНИЕ СООБЩЕНИЙ ВСЕХ ПОЛЬЗОВАТЕЛЕЙ
+        databaseReference.limitToLast(40).on('child_added', (snapshot) => {
+            const incomingData = snapshot.val();
+            if (!incomingData || !incomingData.text || !incomingData.user) return;
+
+            const isMyMessage = incomingData.user === globalNickname;
+            const messageBubble = document.createElement('div');
             
-            const d = document.createElement('div');
-            d.className = isMy ? 'msg my' : 'msg other';
-            d.innerHTML = isMy ? `<div>${escapeHTML(data.text)}</div>` : `<div class="author">${escapeHTML(data.name)}</div><div>${escapeHTML(data.text)}</div>`;
+            // Если автор мы — прижимаем вправо и красим в голубой, если другой — влево в серый
+            if (isMyMessage) {
+                messageBubble.className = 'msg my';
+                messageBubble.innerHTML = `<div>${sanitizeInput(incomingData.text)}</div>`;
+            } else {
+                messageBubble.className = 'msg other';
+                messageBubble.innerHTML = `
+                    <span class="author">${sanitizeInput(incomingData.user)}</span>
+                    <div>${sanitizeInput(incomingData.text)}</div>
+                `;
+            }
             
-            box.appendChild(d);
-            box.scrollTop = box.scrollHeight;
+            chatBox.appendChild(messageBubble);
+            chatBox.scrollTop = chatBox.scrollHeight; // Скролл к последнему сообщению
         });
 
-        function escapeHTML(str) {
-            return str.replace(/[&<>'"]/g, tag => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[tag] || tag));
+        // Защитный фильтр от вредоносного кода (XSS)
+        function sanitizeInput(text) {
+            return text.replace(/[&<>'"]/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[char] || char));
         }
     </script>
 </body>
 </html>
-
 
