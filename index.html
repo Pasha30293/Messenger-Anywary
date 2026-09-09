@@ -1,30 +1,148 @@
-import time
+import flet as ft
 
-# Имитация базы данных в памяти
-messages = [
-    {"user": "Система", "text": "Добро пожаловать в CyberChat!"}
-]
+def main(page: ft.Page):
+    page.title = "CyberChat Desktop"
+    page.theme_mode = ft.ThemeMode.DARK
+    page.window_width = 850
+    page.window_height = 600
+    page.window_resizable = False
+    page.padding = 0
 
-print("⚡ ДОБРО ПОЖАЛОВАТЬ В PYTHON МЕССЕНДЖЕР ⚡")
-username = input("Введите ваш никнейм: ").strip()
-if not username:
-    username = "Аноним"
+    # Переменные пользователя
+    user_name = ft.Ref[ft.TextField]()
+    user_avatar = "🤖"
+    current_room = "Глобальный чат"
 
-print(f"\nОтлично, {username}! Вы вошли в чат.")
-print("Команды: /exit — выйти, /read — обновить чат, любое другое сообщение — отправить в чат.\n")
+    # Списки комнат и сообщений
+    chat_messages = ft.Column(scroll=ft.ScrollMode.AUTO, expand=True, spacing=10)
+    input_field = ft.TextField(
+        hint_text="Напишите сообщение...",
+        flex=1,
+        border_color="#334155",
+        cursor_color="#38bdf8",
+        on_submit=lambda e: send_msg(e)
+    )
 
-while True:
-    action = input(f"[{username}] > ").strip()
-    
-    if action.lower() == '/exit':
-        print("Выход из приложения...")
-        break
-    elif action.lower() == '/read':
-        print("\n--- ИСТОРИЯ ЧАТА ---")
-        for msg in messages:
-            print(f"{msg['user']}: {msg['text']}")
-        print("--------------------\n")
-    elif action:
-        # Добавляем сообщение
-        messages.append({"user": username, "text": action})
-        print("Сообщение отправлено! (Введите /read чтобы увидеть его)")
+    # Функция отправки сообщений в интерфейс
+    def send_msg(e):
+        if not input_field.value.strip():
+            return
+        
+        # Создаем блок сообщения
+        msg_block = ft.Container(
+            content=ft.Column([
+                ft.Row([
+                    ft.Text(user_avatar, size=20),
+                    ft.Text(user_name.current.value, weight=ft.FontWeight.BOLD, color="#38bdf8"),
+                    ft.Text("только что", size=10, color="#64748b")
+                ], spacing=8, alignment=ft.MainAxisAlignment.START),
+                ft.Text(input_field.value, size=15, color="#f8fafc")
+            ], spacing=4),
+            background_color="#1e293b",
+            padding=12,
+            border_radius=12,
+            margin=ft.margin.only(right=40, bottom=5)
+        )
+        
+        chat_messages.controls.append(msg_block)
+        input_field.value = ""
+        page.update()
+        chat_messages.scroll_to(offset=-1, duration=200)
+
+    # Экран авторизации (вход)
+    def login_click(e):
+        if not user_name.current.value.strip():
+            user_name.current.error_text = "Введите никнейм!"
+            page.update()
+            return
+        
+        # Переключаем экран на чат
+        page.views.clear()
+        page.views.append(ft.View("/", [chat_layout]))
+        page.update()
+
+    # Смена аватарки
+    def set_avatar(emoji):
+        nonlocal user_avatar
+        user_avatar = emoji
+        avatar_display.value = f"Выбран аватар: {emoji}"
+        page.update()
+
+    # --- МАКЕТ ЭКРАНА ВХОДА ---
+    avatar_display = ft.Text("Выбран аватар: 🤖", color="#94a3b8")
+    login_layout = ft.Container(
+        content=ft.Column([
+            ft.Text("⚡ CYBERCHAT", size=36, weight=ft.FontWeight.EXTRA_BOLD, 
+                    color="#38bdf8", text_align=ft.TextAlign.CENTER),
+            ft.Text("Новое десктопное приложение", color="#64748b", size=14),
+            ft.Divider(height=20, color="transparent"),
+            ft.TextField(ref=user_name, label="Ваш никнейм", border_color="#334155", width=300),
+            ft.Divider(height=10, color="transparent"),
+            avatar_display,
+            ft.Row([
+                ft.IconButton(content=ft.Text("🤖", size=24), on_click=lambda _: set_avatar("🤖")),
+                ft.IconButton(content=ft.Text("🥷", size=24), on_click=lambda _: set_avatar("🥷")),
+                ft.IconButton(content=ft.Text("🦊", size=24), on_click=lambda _: set_avatar("🦊")),
+                ft.IconButton(content=ft.Text("👽", size=24), on_click=lambda _: set_avatar("👽")),
+            ], alignment=ft.MainAxisAlignment.CENTER),
+            ft.Divider(height=20, color="transparent"),
+            ft.ElevatedButton(
+                "Войти в приложение", 
+                bgcolor="#38bdf8", 
+                color="#0f172a",
+                width=300,
+                height=45,
+                on_click=login_click
+            )
+        ], alignment=ft.MainAxisAlignment.CENTER, horizontal_alignment=ft.CrossAxisAlignment.CENTER),
+        alignment=ft.alignment.center,
+        expand=True,
+        bgcolor="#0f172a"
+    )
+
+    # --- МАКЕТ ЭКРАНА ЧАТА ---
+    sidebar = ft.Container(
+        width=220,
+        bgcolor="#0f172a",
+        padding=15,
+        content=ft.Column([
+            ft.Text("💬 Комнаты", size=18, weight=ft.FontWeight.BOLD, color="#38bdf8"),
+            ft.Divider(color="#1e293b"),
+            ft.TextButton("🌐 Глобальный чат", icon=ft.icons.LANGUAGE, icon_color="#38bdf8"),
+            ft.TextButton("🎮 Игры", icon=ft.icons.GAMES, icon_color="#64748b"),
+            ft.TextButton("📚 Флудилка", icon=ft.icons.FORUM, icon_color="#64748b"),
+        ], spacing=10)
+    )
+
+    main_chat_area = ft.Container(
+        bgcolor="#111827",
+        expand=True,
+        padding=20,
+        content=ft.Column([
+            ft.Row([
+                ft.Text(f"📍 {current_room}", size=20, weight=ft.FontWeight.BOLD),
+                ft.Text("● 1 в сети", color="#4ade80", size=12)
+            ], alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
+            ft.Divider(color="#1e293b"),
+            chat_messages,
+            ft.Row([
+                input_field,
+                ft.IconButton(
+                    icon=ft.icons.SEND,
+                    icon_color="#38bdf8",
+                    icon_size=28,
+                    on_click=lambda e: send_msg(e)
+                )
+            ], spacing=10)
+        ])
+    )
+
+    chat_layout = ft.Row([sidebar, main_chat_area], expand=True, spacing=0)
+
+    # Стартуем с экрана логина
+    page.views.append(ft.View("/", [login_layout]))
+    page.update()
+
+if __name__ == "__main__":
+    ft.app(target=main)
+
