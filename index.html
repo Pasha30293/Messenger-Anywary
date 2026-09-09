@@ -1,0 +1,30 @@
+import time
+
+# Имитация базы данных в памяти
+messages = [
+    {"user": "Система", "text": "Добро пожаловать в CyberChat!"}
+]
+
+print("⚡ ДОБРО ПОЖАЛОВАТЬ В PYTHON МЕССЕНДЖЕР ⚡")
+username = input("Введите ваш никнейм: ").strip()
+if not username:
+    username = "Аноним"
+
+print(f"\nОтлично, {username}! Вы вошли в чат.")
+print("Команды: /exit — выйти, /read — обновить чат, любое другое сообщение — отправить в чат.\n")
+
+while True:
+    action = input(f"[{username}] > ").strip()
+    
+    if action.lower() == '/exit':
+        print("Выход из приложения...")
+        break
+    elif action.lower() == '/read':
+        print("\n--- ИСТОРИЯ ЧАТА ---")
+        for msg in messages:
+            print(f"{msg['user']}: {msg['text']}")
+        print("--------------------\n")
+    elif action:
+        # Добавляем сообщение
+        messages.append({"user": username, "text": action})
+        print("Сообщение отправлено! (Введите /read чтобы увидеть его)")
