@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Новый Мессенджер</title>
+    <title>Рабочий Мессенджер</title>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body { font-family: sans-serif; background-color: #0f172a; color: white; height: 100vh; display: flex; justify-content: center; align-items: center; }
@@ -16,7 +16,7 @@
         input { background: #1e293b; border: 2px solid #334155; border-radius: 10px; padding: 12px; color: white; font-size: 16px; width: 100%; outline: none; margin-bottom: 15px; }
         button { background: #38bdf8; color: #0f172a; border: none; padding: 12px; border-radius: 10px; font-size: 16px; font-weight: bold; cursor: pointer; }
         
-        /* Чат */
+        /* Экран чата */
         .messages { flex: 1; padding: 15px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; background: #0f172a; }
         .msg { max-width: 80%; padding: 10px; border-radius: 12px; font-size: 15px; word-break: break-word; }
         .msg.my { background: #38bdf8; color: #0f172a; align-self: flex-end; }
@@ -28,14 +28,15 @@
 <body>
 
     <div class="window">
-        <!-- ВХОД -->
+        <!-- ЭКРАН ВХОДА -->
         <div class="login" id="loginScreen">
             <h2>Вход в Мессенджер</h2>
+            <!-- Исправлен ID на nickInput -->
             <input type="text" id="nickInput" placeholder="Твой никнейм..." maxlength="12">
             <button onclick="login()">Войти в чат</button>
         </div>
 
-        <!-- ЧАТ -->
+        <!-- ЭКРАН ЧАТА -->
         <div class="messages" id="box"></div>
         <div class="input-bar">
             <input type="text" id="txt" placeholder="Сообщение..." style="margin:0;">
@@ -43,40 +44,65 @@
         </div>
     </div>
 
+    <!-- Быстрая база Firebase от Google -->
+    <script src="https://gstatic.com"></script>
+    <script src="https://gstatic.com"></script>
+
     <script>
+        const firebaseConfig = {
+            databaseURL: "https://firebasedatabase.app"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database().ref("global_messages");
+
         let myName = "";
         const box = document.getElementById('box');
-        const channel = new BroadcastChannel('simple_global_chat'); // Самый надежный способ обмена сообщениями в браузере
 
+        // Логика кнопки входа
         function login() {
-            const name = document.getElementById('nickInput').value.trim();
-            if(!name) return alert("Введи имя!");
+            const nameInput = document.getElementById('nickInput');
+            const name = nameInput.value.trim();
+            if(!name) {
+                alert("Пожалуйста, введи имя!");
+                return;
+            }
             myName = name;
             document.getElementById('loginScreen').classList.add('hidden');
         }
 
+        // Отправка сообщений
         function send() {
-            const text = document.getElementById('txt').value.trim();
+            const txtInput = document.getElementById('txt');
+            const text = txtInput.value.trim();
             if(!text) return;
             
-            const msgData = { name: myName, text: text };
-            channel.postMessage(msgData); // Отправляем другим вкладкам
-            showMsg(msgData, true);       // Показываем у себя
-            document.getElementById('txt').value = "";
+            db.push({
+                name: myName,
+                text: text,
+                time: Date.now()
+            });
+            
+            txtInput.value = "";
         }
 
-        channel.onmessage = (event) => {
-            showMsg(event.data, false);
-        };
-
-        function showMsg(data, isMy) {
+        // Мгновенное отображение сообщений на экране
+        db.limitToLast(50).on('child_added', (snapshot) => {
+            const data = snapshot.val();
+            const isMy = data.name === myName;
+            
             const d = document.createElement('div');
             d.className = isMy ? 'msg my' : 'msg other';
-            d.innerHTML = isMy ? `<div>${data.text}</div>` : `<div class="author">${data.name}</div><div>${data.text}</div>`;
+            d.innerHTML = isMy ? `<div>${escapeHTML(data.text)}</div>` : `<div class="author">${escapeHTML(data.name)}</div><div>${escapeHTML(data.text)}</div>`;
+            
             box.appendChild(d);
             box.scrollTop = box.scrollHeight;
+        });
+
+        function escapeHTML(str) {
+            return str.replace(/[&<>'"]/g, tag => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[tag] || tag));
         }
     </script>
 </body>
 </html>
+
 
