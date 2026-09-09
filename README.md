@@ -1,2 +1,4 @@
 # Messenger-Anywary
-Мессенджер Anywary
+Мессенджер Anywary 
+
+- Бета-тестовая версия менеджера Anywary
